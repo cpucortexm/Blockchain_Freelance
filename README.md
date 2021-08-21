@@ -2,3 +2,4 @@
 
 ## Added
 1. Hello World Smart contract with Frontend + Truffle test
+2. Crypto bot for Binance using RSI and simple logic to sell eth for btc
