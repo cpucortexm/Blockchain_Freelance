@@ -6,7 +6,7 @@ Buy/Sell eth when btc reaches a certain value
 (e.g. If BTC is greater than 40k and then we sell eth)
 
 
-## Trading bot 2
+## Trading bot 2 (RSI)
 Relative Strength Index (RSI) is a type of momentum indicator that looks at the pace of recent price 
 changes so as to determine whether a stock is ripe for a rally or a selloff.
 When an asset is overbought, it means the price is in bullish momentum for an extended period. 
@@ -18,3 +18,12 @@ The RSI overbought and oversold readings are as follow:
 A level above 70 is considered an overbought reading.
 At levels below 30, prices are considered to be in oversold territory.
 The rules are simple: Enter(buy) if the RSI crosses below 30, and exit(Sell) when it crosses above 70
+
+## Trading bot 3 (SMA)
+Based on Simple Moving Average
+
+## Trading bot 4 (MACD)
+Based on Moving Average Convergence and Divergence
+
+## Trading bot 5 (Bollinger Band)
+Based on Bollinger bands
