@@ -17,8 +17,9 @@ class TestNSChain(unittest.TestCase):
         for _, block in enumerate(chain[1:]):
             h_c = block['hash']   #current hash
             h_p = block['prevHash'] # prev hash
-            self.assertEqual(h, hp)
-            h = hc
+            # compare previous hash of current block (h_p) with hash of previous block (h)
+            self.assertEqual(h, h_p) 
+            h = h_c
 
 if __name__ == '__main__':
     unittest.main()
