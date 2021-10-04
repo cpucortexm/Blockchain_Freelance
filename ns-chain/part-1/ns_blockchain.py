@@ -26,8 +26,10 @@ class nsChain:
         
 
     @staticmethod 
-    def DeriveHash(data=None):
-        return hashlib.sha256(data).hexdigest()
+    def DeriveHash(block=None):
+        complete_block = block['data'] + block['prevHash']
+        msg = bytes(complete_block, 'utf-8')
+        return hashlib.sha256(msg).hexdigest()
 
     def __CreateBlock(self, data):
         #represents one block. Dont use global block i.e. in __init__ as dicts 
@@ -41,10 +43,8 @@ class nsChain:
         prevblock = self.get_prev_block()
         if prevblock:               # only if valid block, for genesis block, prev hash=NULL
             block['prevHash'] = prevblock['hash']
-
-        block['data'] = bytearray(data, 'utf-8')
-        combined = block['data'] + bytearray(block['prevHash'], 'utf-8')
-        block['hash'] = self.DeriveHash(combined)
+        block['data'] = data
+        block['hash'] = self.DeriveHash(block)
         self.nschain.append(block) # append the block to the chain
 
     def get_prev_block(self):
@@ -57,6 +57,6 @@ class nsChain:
     def print_nschain(self):
         for block in self.nschain:
             self.logger.info("hash:%s",block['hash'])
-            self.logger.info("data:%s", block['data'].decode())
+            self.logger.info("data:%s", block['data'])
             self.logger.info("prevHash:%s",block['prevHash'])
             self.logger.info("-----------------------")
