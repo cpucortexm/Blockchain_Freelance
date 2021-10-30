@@ -9,6 +9,7 @@
 import json
 import plyvel
 from pylogger import pylog
+from pathlib import Path
 """
   This file is part of ns-chain.
 
@@ -27,7 +28,7 @@ from pylogger import pylog
 """
 class NSDb:
     def __init__(self):
-        self.path = '/tmp/nschain.db'
+        self.path = 'nschain.db'
         self.db = plyvel.DB(self.path, create_if_missing=True)
         self.logger = pylog.get_logger(__name__)
 
