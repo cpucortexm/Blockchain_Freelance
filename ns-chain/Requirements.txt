@@ -1,2 +1,2 @@
-# Need to install leveldb first on your OS
+# Need to install leveldb first on your OS, then install the below python module
 pip install plyvel
