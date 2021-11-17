@@ -8,25 +8,54 @@
 # limited functionality compared to that of Ethereum.
 # Here we will not use script, but define our own transactions
 
-# Transactions represent activity. The more the transactions, the more the people
-# are using the blockchain for projects, dapps, smart contracts. 
+# The trustless system is because of the transactions. In trustless systems everyone
+# can verify everything
+
+# Transactions(Tx) represent activity. The more the transactions, the more the people
+# are using the blockchain for projects, dapps, smart contracts.
+
+# In Tx, inputs specify which outputs of previous tx to spend
+# outputs specify where the money goes.
+
+
 
 import hashlib
-
+import ns_blockchain as blockchain
+from pylogger import pylog
+# Class representing transaction outputs
 class NSTxOut:
-    def __init__(self,):
-        self.value = None    # int
-        self.PublicKey = None # string
+    def __init__(self, _value, _pubkey):
+        self.value = _value    # is an integer (value are mostly in tokens)
 
+        # string (is also called public key hash PKH).This is needed to unlock the tokens in the value field
+        # In bitcoin, the PublicKey is calculated using a language called script and is complicated.
+        # In our implementation, we will use users address as the PublicKey.
+        # e.g. if users address is "Jack" then PublicKey = "Jack" and using this we can unlock
+        # the tokens in the value field
+        self.PublicKey = _pubkey 
+
+# Class representing transaction inputs
 class NSTxIn:
+        # The inputs specify which transaction outputs to spend.
+        # Please read UTXO in ns_blockchain file.
     def __init__(self, id, out, sig):
-        self.ID = id     # list of bytes (hash value of type string)
-        self.Out = out   # integer: Index to output (i.e previous output index)
-        self.Signature = sig   # string
+        # e.g. if the transaction(say x) has 30 outputs, and we want to reference 
+        # only one of them,then the transaction x is represented by ID, and the output with index = Out
+        self.ID = id     # list of bytes (hash value of type string), represents a transaction hash
+        self.Out = out   # integer: Index to output (i.e previous output index), basically index to the PublicKey of the output
 
+        # The inputs need to be signed. In bitcoin, this is again done using the language script.
+        # The signing involves both public key and private key of the user. Public key is the output
+        # public key (PKH) while private key is the one which is private to the user.
+        # In our case as we will just use the PublicKey of the output (i.e.the user's address) as
+        # our signature.
+        self.Signature = sig   # string (same as PublicKey of output = users address)
+
+
+# Class representing a transaction
 class NSTx:
     def __init__(self, id, txins, txouts):
-        self.ID = id    # list of bytes (hash value of type string)
+        self.ID = id    # list of bytes (hash value of type string), represents a transaction hash of current transaction.
         self.TxIn = txins  # list of NSTxIn
         self.TxOut = txouts # list of NSTxOut
 
@@ -53,17 +82,59 @@ def CoinbaseTx(data, to):
 def IsCoinbase(tx):   # returns true or false
     if type(tx) is not NSTx:
         raise Exception("Input must be of NSTx type")
-    return len(tx.TxIn) == 1  && len(tx.TxIn[0].ID == 0   && tx.TxIn[0].Out == -1)
+    return len(tx.TxIn) == 1  and len(tx.TxIn[0].ID == 0  and tx.TxIn[0].Out == -1)
 
-def CanUnlock(data, txin):
+def CanUnlock(data, txin): # returns true or false
     if type(txin) is not NSTxIn:
         raise Exception("Input must be of NSTxIn type")
     return txin.Signature == data
 
-def CanBeUnlocked(data, txout):
+def CanBeUnlocked(data, txout): # returns true or false
     if type(txout) is not NSTxOut:
         raise Exception("Output must be of NSTxOut type")
     return txout.PublicKey == data
+
+
+def New_Transaction(tx_from, tx_to, amount):
+    inputs = []   # list of type class NSTxIn
+    outputs = []  # list of type class NSTxOut
+    acc = 0  # int accumulated
+    validOutputs = {} #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
+    logger = pylog.get_custom_logger(__name__)
+
+    acc, validOutputs = blockchain.find_SpendableOutputs(tx_from, amount)
+    if acc < amount:
+        logger.error("Error: not enough funds")
+
+
+    for txID, outs in validOutputs.items():  # iterate through dict (key = string(ID), value = list(array) of int's)
+        for out in outs:    # loop through the values (list(array) of int's)
+            tx_input =  NSTxIn({txID, out, tx_from)
+            inputs.append(tx_input)
+
+
+    outputs.append(NSTxOut(amount, tx_to))
+    if acc > amount:  # if there is a leftover token of the senders account
+        outputs.append(NSTxOut(acc-amount, tx_from))
+
+    tx = NSTx(None,inputs,outputs)
+    tx.SetID()    # sets the hash of the transaction
+
+    tx := Transaction{nil, inputs, outputs}
+    tx.SetID()
+
+    return tx
+
+
+
+
+
+
+
+
+
+
+
 
 '''
 self.__chain = []

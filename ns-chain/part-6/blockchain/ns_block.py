@@ -31,8 +31,8 @@ class NSBlock:
         return NSBlock.create_block(coinbaseTx)
 
     @staticmethod
-    def add_block_(data, prev):
-        return NSBlock.create_block(data, prev)
+    def add_block_(txs, prev):
+        return NSBlock.create_block(txs, prev)
 
     @staticmethod 
     def derive_hash(block=None):
@@ -50,7 +50,7 @@ class NSBlock:
 
             'Tx': [],# each block needs to have at least one transaction.It can always
                      # have multiple transactions as well.
-                     # Tx is a list of type class NSTx
+                     # Tx is a list of type class NSTx (i.e. object of type class NSTx)
             
             'prevHash':"", # for genesis block, there is no prev hash. It is null
             

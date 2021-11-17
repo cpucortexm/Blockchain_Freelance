@@ -10,6 +10,7 @@ import json
 import plyvel
 from pylogger import pylog
 from pathlib import Path
+import os.path
 """
   This file is part of ns-chain.
 
@@ -43,6 +44,10 @@ class NSDb:
 
     def __repr__(self):
         return (f'{self.__class__.__name__}')
+    
+    def Dbexists(self):
+        dbexists = os.path.exists(self.path)
+        return dbexists          # True if db file exists, else false
     
     def write_block(self, block):  # TODO: hAndle error during write
         try:
