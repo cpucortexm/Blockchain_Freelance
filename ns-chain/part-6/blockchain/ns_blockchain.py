@@ -24,26 +24,35 @@ from ns_mine import NSMine
 from ns_db import NSDb
 import ns_transaction as transaction
 import sys
+from pathlib import Path
+import os.path
 
 class NSChain:
 
     def __init__(self):
         self.lasthash = None
         self.db = None
-        self.genesis_init = False
+        NSMine.init_consensus()
+        #self.genesis_init = False
         self.logger = pylog.get_logger(__name__)
 
     def __repr__(self):
         return (f'{self.__class__.__name__}')
 
+    def db_exists(self):
+        path = 'nschain.db'
+        dbexists = os.path.exists(path)
+        return dbexists          # True if db file exists, else false
+
     def init_blockchain(self, address):
-        self.db = NSDb()  # init database
-        NSMine.init_consensus()
-        genesisData = "First transaction from Genesis"
-        self.genesis_init = True
-        if self.Dbexists():
+        if self.db_exists():
             self.logger.info("Blockchain already exists!")
             sys.exit()
+
+        self.db = NSDb()  # create database object
+        genesisData = "First transaction from Genesis"
+        #self.genesis_init = True
+
         # else if  the database does not exist
         coinbaseTx = transaction.CoinbaseTx(genesisData, address)
         block = nsblock.init_block(coinbaseTx)
@@ -52,8 +61,9 @@ class NSChain:
         self.db.write_last_hash(block)
         self.lasthash = self.db.read_last_hash() # read last hash
 
+
     def continue_blockchain(self, address):
-        if not self.Dbexists():    # if db does not exist , exit the program
+        if not self.db_exists():    # if db does not exist , exit the program
             self.logger.info("No existing blockchain found, create one!")
             sys.exit()
 
@@ -61,12 +71,13 @@ class NSChain:
 
     
     def add_block(self,transactions):
-        if not self.genesis_init:
-            assert False, ('Must Initialize the Blockchain first!!')
-        if type(transactions) is not NSTx: # data must be of NSTx type
+        #if not self.genesis_init:
+        #    assert False, ('Must Initialize the Blockchain first!!')
+        print(type(transactions))
+        if not isinstance(transactions,transaction.NSTx): # data must be of NSTx type
             raise Exception("Sorry, input must be of transaction type")
         lastblock = self.get_prev_block()
-        block = nsblock.add_block_(data, lastblock)
+        block = nsblock.add_block_(transactions, lastblock)
         self.logger.info("Block hash: %s",block['hash'])
         self.db.write_block(block) # append the block to the chain in database
         self.db.write_last_hash(block) # also write last hash to the database
@@ -78,6 +89,7 @@ class NSChain:
 
     def get_blockchain(self):
         nschain = []  # start with empty list
+        self.db = NSDb()  # get database object (does not create new database)
         currhash  = self.db.read_last_hash() # start from last hash
         while currhash: # for genesis block, prev hash is empty=""
             currblock = self.db.read_block(currhash) # read the last block
@@ -91,10 +103,25 @@ class NSChain:
     def print_nschain(self):
         nschain = self.get_blockchain()
         for block in nschain:
-            self.logger.info("hash:%s",block['hash'])
+            self.logger.info("block Hash:%s",block['hash'])
             self.logger.info("prevHash:%s",block['prevHash'])
-            self.logger.info("data:%s", block['data'])
-            self.logger.info("-----------------------")
+            self.logger.info("block Transactions:")
+            for tx in block['Tx']:
+                self.logger.info("Hash: %s",tx.ID)
+                
+                self.logger.info("Transaction In's:")
+                for txin in tx.TxIn:
+                   print(type(txin))
+                   self.logger.info(txin.ID)
+                   self.logger.info(txin.Out)
+                   self.logger.info(txin.Signature)
+                
+                self.logger.info("Transaction Out's:")
+                for txout in tx.TxOut:
+                   self.logger.info(txout.value)
+                   self.logger.info(txout.PublicKey)
+
+            self.logger.info("-----------------------------------")
 
     # UTXO : Unspent transaction Outputs helps solve double spend
     # The theory :
@@ -137,53 +164,56 @@ class NSChain:
         spentTXOs = {}  # map of strings(ID) to list(array) of int value(NSTxIn.Out)
 
         currhash  = self.db.read_last_hash() # start from last hash
-        while(len(currhash) != 0)  # for genesis block, prev hash is empty="", hence len(currhash) == 0
+        while(len(currhash) != 0):  # for genesis block, prev hash is empty="", hence len(currhash) == 0
             currblock = self.db.read_block(currhash) # read the last block
-
                 # Loop through all the transactions of the current block
-                for idx, tx in enumerate(currblock['Tx']): # each tx = object of class NSTx
-                    txID = tx.ID   # get the ID= hash for the transaction
-                    for outIdx, outTx in enumerate(tx.TxOut):
-                        if spentTXOs[txID]:   # if the value for the key exists (true or false)
-                            for spentOut in  spentTXOs[txID]: # iterate through the map value (list or array of int's)
-                                if spentOut == outIdx:
-                                    break    # break from inner loop and continue back to outer for loop (outIdx, outTx)
+            for idx, tx in enumerate(currblock['Tx']): # each tx = object of class NSTx
+                txID = tx.ID   # get the ID= hash for the transaction
+                for outIdx, outTx in enumerate(tx.TxOut):
+                    if txID in spentTXOs:   # check if the key exists (true or false)
+                        for spentOut in  spentTXOs[txID]: # iterate through the map value (list or array of int's)
+                            if spentOut == outIdx:
+                                break    # break from inner loop and continue back to outer for loop (outIdx, outTx)
 
-                        if transaction.CanBeUnlocked(address, outTx):
-                            unspentTxs.append(tx)
+                    if transaction.CanBeUnlocked(address, outTx):
+                        unspentTxs.append(tx)
 
-                    if(transaction.IsCoinbase(tx) == False):
-                        # Loop through the list of all the tx inputs(TxIn) of the current tx
-                        for inIdx, inTx in enumerate(tx.TxIn):
-                            if(transaction.CanUnlock(address, inTx)): # as we are using user's address as Signature in input
-                                spentTXOs[inTx.ID].append(inTx.Out)  #append value = Out, to the key=ID
+                if(transaction.IsCoinbase(tx) == False):
+                    # Loop through the list of all the tx inputs(TxIn) of the current tx
+                    for inIdx, inTx in enumerate(tx.TxIn):
+                        if(transaction.CanUnlock(address, inTx)): # as we are using user's address as Signature in input
+                            spentTXOs[inTx.ID].append(inTx.Out)  #append value = Out, to the key=ID
+            currhash = currblock['prevHash']
         return unspentTxs
 
 
-        def find_UTXO(self,address):
-            UTXOs = []  # variable of type NSTxOut
-            unspenttxs = self.find_UnspentTransactions(address)
+    def find_UTXO(self,address):
+        UTXOs = []  # variable of type NSTxOut
+        unspenttxs = self.find_UnspentTransactions(address)
 
-            for tx in unspenttxs:
-                for out in tx.TxOut:
-                    if transaction.CanBeUnlocked(address, out):
-                        UTXOs.append(out)
-            return UTXOs
+        for tx in unspenttxs:
+            for out in tx.TxOut:
+                if transaction.CanBeUnlocked(address, out):
+                    UTXOs.append(out)
+        return UTXOs
 
-        def find_SpendableOutputs(self, address, amount):
-            unspentOuts = {}   #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
-            unspentTxs = self.find_UnspentTransactions(address)
-            accumulated = 0
+    def find_SpendableOutputs(self, address, amount):
+        unspentOuts = {}   #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
+        unspentTxs = self.find_UnspentTransactions(address)
+        accumulated = 0
 
-            for tx in unspentTxs:
-                txID = tx.ID   # get the ID= hash for the transaction
-                for outIdx, outTx in enumerate(tx.TxOut):
-                    if transaction.CanBeUnlocked(address, outTx) and (accumulated < amount):
-                        accumulated += outTx.value
-                        unspentOuts[txID].append(outIdx)
-                        if accumulated >= amount:   # break from all the loops and return
-                            return accumulated, unspentOuts
-            return accumulated, unspentOuts
+        for tx in unspentTxs:
+            txID = tx.ID   # get the ID= hash for the transaction
+            outvalues = []   # list of out values
+            for outIdx, outTx in enumerate(tx.TxOut):
+                if transaction.CanBeUnlocked(address, outTx) and (accumulated < amount):
+                    accumulated += outTx.value
+                    outvalues.append(outIdx)   # dict value is a list of out (ints)
+                    key = txID                  # dict key
+                    unspentOuts.update({key:outvalues}) # update the dict with key and value
+                    if accumulated >= amount:   # break from all the loops and return
+                        return accumulated, unspentOuts
+        return accumulated, unspentOuts
 
     def __del__(self):
         del self.db    # Cleanup operation during exit

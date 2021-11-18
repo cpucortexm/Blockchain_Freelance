@@ -32,7 +32,11 @@ class NSTxOut:
         # In our implementation, we will use users address as the PublicKey.
         # e.g. if users address is "Jack" then PublicKey = "Jack" and using this we can unlock
         # the tokens in the value field
-        self.PublicKey = _pubkey 
+        self.PublicKey = _pubkey
+
+    def __str__(self):
+        return str(self.__dict__)
+
 
 # Class representing transaction inputs
 class NSTxIn:
@@ -51,13 +55,19 @@ class NSTxIn:
         # our signature.
         self.Signature = sig   # string (same as PublicKey of output = users address)
 
+    def __str__(self):
+        return str(self.__dict__)
+
 
 # Class representing a transaction
 class NSTx:
-    def __init__(self, id, txins, txouts):
+    def __init__(self, id, txins=[], txouts=[]):
         self.ID = id    # list of bytes (hash value of type string), represents a transaction hash of current transaction.
         self.TxIn = txins  # list of NSTxIn
         self.TxOut = txouts # list of NSTxOut
+
+    def __str__(self):
+        return str(self.__dict__)
 
     def SetID(self):
         complete_block = str(self.ID)  + str(self.TxIn) + str(self.TxOut)
@@ -74,7 +84,7 @@ def CoinbaseTx(data, to):
 
     txin  = NSTxIn([], -1, data) # start with empty hash and -1 for coinbaseTx
     txout = NSTxOut(100, to)
-    tx  = NSTx(None, txin, txout)
+    tx  = NSTx(None, [txin], [txout])
 
     tx.SetID()
     return tx
@@ -82,7 +92,7 @@ def CoinbaseTx(data, to):
 def IsCoinbase(tx):   # returns true or false
     if type(tx) is not NSTx:
         raise Exception("Input must be of NSTx type")
-    return len(tx.TxIn) == 1  and len(tx.TxIn[0].ID == 0  and tx.TxIn[0].Out == -1)
+    return (len(tx.TxIn) == 1  and len(tx.TxIn[0].ID) == 0  and tx.TxIn[0].Out == -1)
 
 def CanUnlock(data, txin): # returns true or false
     if type(txin) is not NSTxIn:
@@ -95,21 +105,21 @@ def CanBeUnlocked(data, txout): # returns true or false
     return txout.PublicKey == data
 
 
-def New_Transaction(tx_from, tx_to, amount):
+def New_Transaction(tx_from, tx_to, amount, acc,validOutputs):
     inputs = []   # list of type class NSTxIn
     outputs = []  # list of type class NSTxOut
-    acc = 0  # int accumulated
-    validOutputs = {} #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
+    #acc = 0  # int accumulated
+    #validOutputs = {} #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
     logger = pylog.get_custom_logger(__name__)
 
-    acc, validOutputs = blockchain.find_SpendableOutputs(tx_from, amount)
+    #acc, validOutputs = blockchain.find_SpendableOutputs(tx_from, amount)
     if acc < amount:
         logger.error("Error: not enough funds")
 
 
     for txID, outs in validOutputs.items():  # iterate through dict (key = string(ID), value = list(array) of int's)
         for out in outs:    # loop through the values (list(array) of int's)
-            tx_input =  NSTxIn({txID, out, tx_from)
+            tx_input =  NSTxIn(txID, out, tx_from)
             inputs.append(tx_input)
 
 
@@ -119,10 +129,6 @@ def New_Transaction(tx_from, tx_to, amount):
 
     tx = NSTx(None,inputs,outputs)
     tx.SetID()    # sets the hash of the transaction
-
-    tx := Transaction{nil, inputs, outputs}
-    tx.SetID()
-
     return tx
 
 

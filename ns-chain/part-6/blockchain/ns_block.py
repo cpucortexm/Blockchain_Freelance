@@ -60,25 +60,27 @@ class NSBlock:
         if prevblock:  # only if valid block, for genesis block, prev hash=NULL
             block['prevHash'] = prevblock['hash']
 
-        block['Tx'] = txs
+        block['Tx'] = [txs]   # list of all transactions in a block
         block['hash'] = NSMine.start_mining(block)
+        print("type at Create block")
+        print(type(block['Tx'][0]))
         return block
 
-        @staticmethod
-        def hash_of_tx(block):
-            idlist = [] # list to collect all the tx hashes of the block
-            hash_sum = ''  # empty
+    @staticmethod
+    def hash_of_tx(block):
+        idlist = [] # list to collect all the tx hashes of the block
+        hash_sum = ''  # empty
 
-            for index, tx in enumerate(block['Tx'])    # get each tx from the list block['Tx']
-                idlist.append(tx.ID)                   # each tx is an object of type class NSTx
+        for index, tx in enumerate(block['Tx']):   # get each tx from the list block['Tx']
+            idlist.append(tx.ID)                   # each tx is an object of type class NSTx
                                                        # tx.ID gives the hash of every transaction
                                                        # Note: tx.ID is already a string
 
 
-            for index, id in enumerate(idlist)    # Go through each ID (hash) and join them
-                hash_sum = ''.join(id[index])
+        for index, id in enumerate(idlist):    # Go through each ID (hash) and join them
+            hash_sum = ''.join(id[index])
 
-            msg = bytes(hash_sum, 'utf-8')
-            return hashlib.sha256(msg).hexdigest()   # Find hash of all the hashes in the transactions
+        msg = bytes(hash_sum, 'utf-8')
+        return hashlib.sha256(msg).hexdigest()   # Find hash of all the hashes in the transactions
 
 

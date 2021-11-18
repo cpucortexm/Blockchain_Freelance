@@ -7,10 +7,13 @@
 # to pack and unpack data in bytes/dict format
 
 import json
+import jsonpickle
 import plyvel
 from pylogger import pylog
-from pathlib import Path
-import os.path
+import ns_transaction
+from collections import namedtuple
+
+
 """
   This file is part of ns-chain.
 
@@ -44,30 +47,46 @@ class NSDb:
 
     def __repr__(self):
         return (f'{self.__class__.__name__}')
-    
-    def Dbexists(self):
-        dbexists = os.path.exists(self.path)
-        return dbexists          # True if db file exists, else false
-    
-    def write_block(self, block):  # TODO: hAndle error during write
-        try:
-            key, value = self.serialize(block)
-            self.db.put(key, value)
-        except:
-            self.logger.error("Failure to write the block to database")
 
     # Convert dict to bytes as needed by leveldb
+    def write_block(self,block):
+        try:
+            key,value = self.serialize(block) # ToDo: hAndle error during write
+            self.db.put(key,value)
+            print("type at serialize:")
+            print(type(block['Tx'][0]))
+        except:
+            self.logger.error("Failure to write the block to database") 
+
+
     # json.dumps() converts dict to string -> then use bytes()
-    def serialize(self, block):
-        key   = bytes(block['hash'], 'UTF-8')
-        value = bytes(json.dumps(block), 'UTF-8')
-        return key,value
+    # As mentioned in many other answers you can pass a function to json.dumps
+    # to convert objects that are not one of the types supported by default to
+    # a supported type. Surprisingly none of them mentions the simplest case, 
+    # which is to use the built-in function vars to convert objects into a dict 
+    # containing all their attributes:
+
+    # def serialize(self, block):
+    #     key   = bytes(block['hash'], 'UTF-8')
+    #     value = bytes(json.dumps(block), 'UTF-8')
+    #     print("in serialize")
+    #     print(value)
+    #     return key,value
 
     # Convert bytes to dict
     # first decode() converts bytes to string ->json.loads() converts string to dict
-    def deserialize(self,data):
-        return json.loads(data.decode())
+    #    def deserialize(self,data):
+    #       return json.loads(data.decode())
 
+    def serialize(self, block):
+        key   = bytes(block['hash'], 'UTF-8')
+        value = bytes(jsonpickle.encode(block), 'UTF-8')
+        return key,value
+
+
+    def deserialize(self,data):
+        return jsonpickle.decode(data)
+   
     def read_block(self, key):   
         try:
             serialised_val = self.db.get(bytes(key,'UTF-8')) # given key must be in bytes
@@ -82,7 +101,7 @@ class NSDb:
 
     def write_last_hash(self, block):
         try:
-            key  = bytes(block['hash'],'UTF-8')  # TODO : handle error during write
+            key  = bytes(block['hash'],'UTF-8')  # ToDO : handle error during write
             self.db.put(bytes('lh', 'UTF-8'), key)   # write last hash to db
         except:
             self.logger.error("Failure to add hash to database")
