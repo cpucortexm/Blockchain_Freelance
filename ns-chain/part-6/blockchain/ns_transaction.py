@@ -111,11 +111,12 @@ def New_Transaction(tx_from, tx_to, amount, acc,validOutputs):
     #acc = 0  # int accumulated
     #validOutputs = {} #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
     logger = pylog.get_custom_logger(__name__)
-
     #acc, validOutputs = blockchain.find_SpendableOutputs(tx_from, amount)
     if acc < amount:
         logger.error("Error: not enough funds")
 
+    print("acc:", acc)
+    print("validOutputs:",validOutputs.items())
 
     for txID, outs in validOutputs.items():  # iterate through dict (key = string(ID), value = list(array) of int's)
         for out in outs:    # loop through the values (list(array) of int's)

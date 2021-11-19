@@ -108,20 +108,19 @@ class NSChain:
             self.logger.info("block Transactions:")
             for tx in block['Tx']:
                 self.logger.info("Hash: %s",tx.ID)
-                
+                self.logger.info("----------------")
                 self.logger.info("Transaction In's:")
                 for txin in tx.TxIn:
-                   print(type(txin))
                    self.logger.info(txin.ID)
                    self.logger.info(txin.Out)
                    self.logger.info(txin.Signature)
-                
+                self.logger.info("----------------")
                 self.logger.info("Transaction Out's:")
                 for txout in tx.TxOut:
                    self.logger.info(txout.value)
                    self.logger.info(txout.PublicKey)
 
-            self.logger.info("-----------------------------------")
+            self.logger.info("------------------------------------------------------------------------------")
 
     # UTXO : Unspent transaction Outputs helps solve double spend
     # The theory :
@@ -169,26 +168,36 @@ class NSChain:
                 # Loop through all the transactions of the current block
             for idx, tx in enumerate(currblock['Tx']): # each tx = object of class NSTx
                 txID = tx.ID   # get the ID= hash for the transaction
+                continue_outer_loop = False
                 for outIdx, outTx in enumerate(tx.TxOut):
+                    print("counter")
                     if txID in spentTXOs:   # check if the key exists (true or false)
                         for spentOut in  spentTXOs[txID]: # iterate through the map value (list or array of int's)
                             if spentOut == outIdx:
-                                break    # break from inner loop and continue back to outer for loop (outIdx, outTx)
+                                continue_outer_loop = True # flag to escape inner loop
+                                break    # break from inner loop
+                    if continue_outer_loop is True:   # continue back to outer for loop (outIdx, outTx)
+                        continue
 
+                    print("CanbeUnlocked:", address, outTx.PublicKey)
                     if transaction.CanBeUnlocked(address, outTx):
                         unspentTxs.append(tx)
-
+                print("IS coinbase tx:",transaction.IsCoinbase(tx))
                 if(transaction.IsCoinbase(tx) == False):
                     # Loop through the list of all the tx inputs(TxIn) of the current tx
+                    outvalues = []
                     for inIdx, inTx in enumerate(tx.TxIn):
                         if(transaction.CanUnlock(address, inTx)): # as we are using user's address as Signature in input
-                            spentTXOs[inTx.ID].append(inTx.Out)  #append value = Out, to the key=ID
+                            outvalues.append(inTx.Out)   # dict value is a list of out (ints)
+                            key = inTx.ID                  # dict key
+                            spentTXOs.update({key:outvalues})  #append value = Out, to the key=ID
+
             currhash = currblock['prevHash']
         return unspentTxs
 
 
     def find_UTXO(self,address):
-        UTXOs = []  # variable of type NSTxOut
+        UTXOs = []  # list of variable of type NSTxOut
         unspenttxs = self.find_UnspentTransactions(address)
 
         for tx in unspenttxs:
@@ -199,10 +208,12 @@ class NSChain:
 
     def find_SpendableOutputs(self, address, amount):
         unspentOuts = {}   #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
+        print("marker for Spendable Outputs")
         unspentTxs = self.find_UnspentTransactions(address)
         accumulated = 0
-
+        print(unspentTxs)
         for tx in unspentTxs:
+            print("Inside unspentTxs")
             txID = tx.ID   # get the ID= hash for the transaction
             outvalues = []   # list of out values
             for outIdx, outTx in enumerate(tx.TxOut):
