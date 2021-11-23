@@ -62,8 +62,6 @@ class NSBlock:
 
         block['Tx'] = [txs]   # list of all transactions in a block
         block['hash'] = NSMine.start_mining(block)
-        print("type at Create block")
-        print(type(block['Tx'][0]))
         return block
 
     @staticmethod

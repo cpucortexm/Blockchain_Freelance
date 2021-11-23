@@ -35,7 +35,7 @@ def create_blockchain(args):
   logger.info("Finished!")
 
 def get_balance(args):
-  chain = bc.continue_blockchain(args.address)
+  chain = bc.continue_blockchain(args.address)  # to check if blockchain exists
   balance = 0
   UTXOs = bc.find_UTXO(args.address)
 
@@ -62,7 +62,7 @@ def test_chain():
 if __name__ == '__main__':
 
     # variables here will be global
-    bc = None# = NSChain()      # Create blockchain
+    bc = None  # Create blockchain
 
     # Use subparser if you want different arguments to be permitted
     # based on the command being run

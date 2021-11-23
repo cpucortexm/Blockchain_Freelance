@@ -1,2 +1,6 @@
 # Need to install leveldb first on your OS, then install the below python module
 pip install plyvel
+
+#PS:
+From part-6 onwards, set the PYTHONPATH in the .virtualenv/bin activate or preactivate file.
+This is needed as we start adding folders, so setting python path is a must

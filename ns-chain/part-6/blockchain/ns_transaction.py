@@ -75,7 +75,6 @@ class NSTx:
         self.ID = hashlib.sha256(msg).hexdigest()     # self.ID will be of string type
 
 
-
 # Called during Genesis block creation. The first tx is called Coinbase tx
 # ToDo: Can be a class method as it creating a new object of type NSTx
 def CoinbaseTx(data, to):
@@ -115,9 +114,6 @@ def New_Transaction(tx_from, tx_to, amount, acc,validOutputs):
     if acc < amount:
         logger.error("Error: not enough funds")
 
-    print("acc:", acc)
-    print("validOutputs:",validOutputs.items())
-
     for txID, outs in validOutputs.items():  # iterate through dict (key = string(ID), value = list(array) of int's)
         for out in outs:    # loop through the values (list(array) of int's)
             tx_input =  NSTxIn(txID, out, tx_from)
@@ -131,42 +127,3 @@ def New_Transaction(tx_from, tx_to, amount, acc,validOutputs):
     tx = NSTx(None,inputs,outputs)
     tx.SetID()    # sets the hash of the transaction
     return tx
-
-
-
-
-
-
-
-
-
-
-
-
-'''
-self.__chain = []
-self.__current_transactions = []
-
-@property
-def last_block(self):
-    return self.__chain[-1]
-
-@property
-def last_transaction(self):
-    return self.__current_transactions[-1]
-
-@property
-def pending_transactions(self):
-    return self.__current_transactions
-
-@property
-def full_chain(self):
-    return self.__chain
-
-__chain: A list of Blocks representing the blockchain [private]
-__current_transactions: The list of transactions which are not yet part of a block [private]
-last_block: The last block added to the chain
-last_transaction: The last transaction added to the chain
-pending_transactions: returns the __current_transactions attribute
-full_chain: returns the __chain attribute
-'''

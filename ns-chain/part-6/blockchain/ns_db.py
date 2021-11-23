@@ -34,7 +34,6 @@ class NSDb:
     def __init__(self):
         self.path = 'nschain.db'
         self.logger = pylog.get_logger(__name__)
-        self.logger.info("Opening database called.!!!")
         try:
             self.db = plyvel.DB(self.path, create_if_missing=True)
         except:
@@ -42,7 +41,6 @@ class NSDb:
     
 
     def __del__(self):
-        self.logger.info("closing database called.!!!")
         self.db.close() # closes the database needed for clean shutdown
 
     def __repr__(self):
@@ -53,37 +51,17 @@ class NSDb:
         try:
             key,value = self.serialize(block) # ToDo: hAndle error during write
             self.db.put(key,value)
-            print("type at serialize:")
-            print(type(block['Tx'][0]))
         except:
             self.logger.error("Failure to write the block to database") 
 
 
-    # json.dumps() converts dict to string -> then use bytes()
-    # As mentioned in many other answers you can pass a function to json.dumps
-    # to convert objects that are not one of the types supported by default to
-    # a supported type. Surprisingly none of them mentions the simplest case, 
-    # which is to use the built-in function vars to convert objects into a dict 
-    # containing all their attributes:
-
-    # def serialize(self, block):
-    #     key   = bytes(block['hash'], 'UTF-8')
-    #     value = bytes(json.dumps(block), 'UTF-8')
-    #     print("in serialize")
-    #     print(value)
-    #     return key,value
-
-    # Convert bytes to dict
-    # first decode() converts bytes to string ->json.loads() converts string to dict
-    #    def deserialize(self,data):
-    #       return json.loads(data.decode())
-
+    # We use json-pickle encode to serialise (convert dict to string)
     def serialize(self, block):
         key   = bytes(block['hash'], 'UTF-8')
         value = bytes(jsonpickle.encode(block), 'UTF-8')
         return key,value
 
-
+    # We use json-pickle decode to deserialise (convert string to dict)
     def deserialize(self,data):
         return jsonpickle.decode(data)
    

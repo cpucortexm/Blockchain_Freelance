@@ -33,7 +33,6 @@ class NSChain:
         self.lasthash = None
         self.db = None
         NSMine.init_consensus()
-        #self.genesis_init = False
         self.logger = pylog.get_logger(__name__)
 
     def __repr__(self):
@@ -44,14 +43,16 @@ class NSChain:
         dbexists = os.path.exists(path)
         return dbexists          # True if db file exists, else false
 
+    def create_db_object(self):
+        self.db = NSDb()  # create or get database object
+
     def init_blockchain(self, address):
         if self.db_exists():
             self.logger.info("Blockchain already exists!")
             sys.exit()
 
-        self.db = NSDb()  # create database object
+        self.db = NSDb()  # create or get database object
         genesisData = "First transaction from Genesis"
-        #self.genesis_init = True
 
         # else if  the database does not exist
         coinbaseTx = transaction.CoinbaseTx(genesisData, address)
@@ -71,9 +72,6 @@ class NSChain:
 
     
     def add_block(self,transactions):
-        #if not self.genesis_init:
-        #    assert False, ('Must Initialize the Blockchain first!!')
-        print(type(transactions))
         if not isinstance(transactions,transaction.NSTx): # data must be of NSTx type
             raise Exception("Sorry, input must be of transaction type")
         lastblock = self.get_prev_block()
@@ -89,7 +87,7 @@ class NSChain:
 
     def get_blockchain(self):
         nschain = []  # start with empty list
-        self.db = NSDb()  # get database object (does not create new database)
+        self.db = NSDb()  # get database object (does not create new database)  # get database object (does not create new database)
         currhash  = self.db.read_last_hash() # start from last hash
         while currhash: # for genesis block, prev hash is empty=""
             currblock = self.db.read_block(currhash) # read the last block
@@ -170,19 +168,17 @@ class NSChain:
                 txID = tx.ID   # get the ID= hash for the transaction
                 continue_outer_loop = False
                 for outIdx, outTx in enumerate(tx.TxOut):
-                    print("counter")
                     if txID in spentTXOs:   # check if the key exists (true or false)
                         for spentOut in  spentTXOs[txID]: # iterate through the map value (list or array of int's)
                             if spentOut == outIdx:
                                 continue_outer_loop = True # flag to escape inner loop
                                 break    # break from inner loop
+
                     if continue_outer_loop is True:   # continue back to outer for loop (outIdx, outTx)
                         continue
 
-                    print("CanbeUnlocked:", address, outTx.PublicKey)
                     if transaction.CanBeUnlocked(address, outTx):
                         unspentTxs.append(tx)
-                print("IS coinbase tx:",transaction.IsCoinbase(tx))
                 if(transaction.IsCoinbase(tx) == False):
                     # Loop through the list of all the tx inputs(TxIn) of the current tx
                     outvalues = []
@@ -208,12 +204,9 @@ class NSChain:
 
     def find_SpendableOutputs(self, address, amount):
         unspentOuts = {}   #  map of strings(ID) to list(array) of int value(NSTxIn.Out)
-        print("marker for Spendable Outputs")
         unspentTxs = self.find_UnspentTransactions(address)
         accumulated = 0
-        print(unspentTxs)
         for tx in unspentTxs:
-            print("Inside unspentTxs")
             txID = tx.ID   # get the ID= hash for the transaction
             outvalues = []   # list of out values
             for outIdx, outTx in enumerate(tx.TxOut):
